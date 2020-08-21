@@ -27,6 +27,10 @@ export type playingUsers = {
 	[s: string]: string;
 };
 
+export type spectatingUsers = {
+	[s: string]: string;
+};
+
 export type pickedButtons = {
 	[s: string]: "hit" | "miss";
 };

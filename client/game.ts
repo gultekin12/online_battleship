@@ -10,16 +10,13 @@ import * as types from "../typings";
 import * as CONFIG from "../gameConfig";
 
 const socket = io("//" + window.location.host, {
-	query: "session_id=" + utils.getCookie("USERDATA")
+	query: "session_id=" + utils.getCookie("USERDATA"),
 });
 let placeToPick = CONFIG.placesToPick;
 
-const gameSocket = io(
-	"//" + window.location.host + `/${location.pathname.replace("/game/", "")}`,
-	{
-		query: "session_id=" + utils.getCookie("USERDATA")
-	}
-);
+const gameSocket = io("//" + window.location.host + `/${location.pathname.replace("/game/", "")}`, {
+	query: "session_id=" + utils.getCookie("USERDATA"),
+});
 
 window.socket = socket;
 
@@ -49,9 +46,7 @@ gameSocket.on("pickSuccessful", () => {
 
 gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 	// console.log(activeGame);
-	const statusText = <HTMLSpanElement>(
-		document.querySelector(".topbar .status")
-	);
+	const statusText = <HTMLSpanElement>document.querySelector(".topbar .status");
 	let user: "userA" | "userB";
 	Object.keys(activeGame).forEach((key: "userA" | "userB" | "state") => {
 		if (key !== "state") {
@@ -62,9 +57,7 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 		statusText.innerText = "Waiting for some opponent to join.";
 		document.body.className = "waiting";
 	} else if (activeGame.state === "PICKING") {
-		if (
-			Object.keys(activeGame[user].ships).length === CONFIG.placesToPick
-		) {
+		if (Object.keys(activeGame[user].ships).length === CONFIG.placesToPick) {
 			utils.placeAlreadyPicked(activeGame[user].ships);
 			statusText.innerText = `Your ship placements are confirmed. Please wait until your opponent confirms aswell.`;
 			document.body.className = "pickSuccessful";
@@ -91,47 +84,24 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 							button.parentElement.classList.add("picked");
 							placeToPick--;
 							if (placeToPick === 0) {
-								const confirmButton = document.createElement(
-									"button"
-								);
-								confirmButton.innerText =
-									"Click to Confirm Your Placements";
+								const confirmButton = document.createElement("button");
+								confirmButton.innerText = "Click to Confirm Your Placements";
 								confirmButton.className = "confirmButton";
 								confirmButton.onclick = () => {
 									const pickedButtons: types.pickedButtons = {};
 									document
 										.querySelectorAll(".picked button")
-										.forEach(
-											(
-												pickedButton: HTMLButtonElement
-											) => {
-												if (
-													utils.boxIdRegex.test(
-														pickedButton.innerText
-													)
-												) {
-													pickedButtons[
-														pickedButton.innerText
-													] = "miss";
-												} else {
-													utils.error(
-														`Unidentified boxId: ${
-															pickedButton.innerText
-														}`
-													);
-												}
+										.forEach((pickedButton: HTMLButtonElement) => {
+											if (utils.boxIdRegex.test(pickedButton.innerText)) {
+												pickedButtons[pickedButton.innerText] = "miss";
+											} else {
+												utils.error(`Unidentified boxId: ${pickedButton.innerText}`);
 											}
-										);
-									gameSocket.emit(
-										"setPlacement",
-										pickedButtons
-									);
+										});
+									gameSocket.emit("setPlacement", pickedButtons);
 								};
-								statusText.innerText =
-									"Waiting for you to confirm your placements.";
-								statusText.parentElement.appendChild(
-									confirmButton
-								);
+								statusText.innerText = "Waiting for you to confirm your placements.";
+								statusText.parentElement.appendChild(confirmButton);
 								document.body.className = "noPicksLeft";
 							} else {
 								statusText.innerText = `Pick places of your ships. You need to choose ${placeToPick} more boxes.`;
@@ -147,8 +117,7 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 		utils.removeButtonIfExists(".confirmButton");
 		if (activeGame[user].turn) {
 			document.body.className = "started turn";
-			statusText.innerText =
-				"It's your turn! Click to a button on prediction table to bomb that coordinate.";
+			statusText.innerText = "It's your turn! Click to a button on prediction table to bomb that coordinate.";
 		} else {
 			document.body.className = "started noTurn";
 			statusText.innerText =
@@ -166,9 +135,7 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 		utils.placeAlreadyBombed(activeGame[user].bombarded);
 		utils.placeAlreadyPredicted(activeGame[user].predicted);
 		utils.setGameEnded(
-			activeGame[user].won
-				? "Congratulations! You won!"
-				: "The other user won the game. You lost!"
+			activeGame[user].won ? "Congratulations! You won!" : "The other user won the game. You lost!"
 		);
 		document.body.className = "finished";
 	}
@@ -176,6 +143,10 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 
 gameSocket.on("gameEnded", (message?: string) => {
 	utils.setGameEnded(message);
+});
+
+gameSocket.on("removeButton", (message?: string) => {
+	utils.removeButtonIfExists(`.spectateGame[title=${message}]`);
 });
 
 socket.on("onlineCount", (onlineCount: number) => {
@@ -212,18 +183,14 @@ for (let i = 1; i < (columns.length + 1) * (rows.length + 1); i++) {
 		columnEl.innerText = columnTag;
 		columnEl.className = `columnth${columnTag}`;
 		playTable.querySelector(`.row0`).appendChild(columnEl);
-		predictionTable
-			.querySelector(`.row0`)
-			.appendChild(columnEl.cloneNode(true));
+		predictionTable.querySelector(`.row0`).appendChild(columnEl.cloneNode(true));
 	} else if (i > columns.length && i % (rows.length + 1) === 0) {
 		// console.log(`Row Header: ${rowNum}`);
 		const rowEl = document.createElement("th");
 		rowEl.innerText = `${rowNum}`;
 		rowEl.className = `rowth${rowNum}`;
 		playTable.querySelector(`.row${rowNum}`).appendChild(rowEl);
-		predictionTable
-			.querySelector(`.row${rowNum}`)
-			.appendChild(rowEl.cloneNode(true));
+		predictionTable.querySelector(`.row${rowNum}`).appendChild(rowEl.cloneNode(true));
 	} else {
 		const boxId = `${columnTag}${rowNum}`;
 		// console.log(`Normal Box: ${boxId}`);
@@ -234,9 +201,7 @@ for (let i = 1; i < (columns.length + 1) * (rows.length + 1); i++) {
 		boxButton.innerText = boxId;
 		boxEl.appendChild(boxButton);
 		playTable.querySelector(`.row${rowNum}`).appendChild(boxEl);
-		predictionTable
-			.querySelector(`.row${rowNum}`)
-			.appendChild(boxEl.cloneNode(true));
+		predictionTable.querySelector(`.row${rowNum}`).appendChild(boxEl.cloneNode(true));
 	}
 }
 document.body.appendChild(playTable);

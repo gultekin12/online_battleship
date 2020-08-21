@@ -53,6 +53,7 @@ io.use((socket, next) => sessionMiddleware(socket.request, socket.request.res, n
 const activeGames: types.activeGames = {};
 const gameSockets: { [s: string]: socketio.Namespace } = {};
 const playingUsers: types.playingUsers = {};
+const spectatingUsers: types.spectatingUsers = {};
 
 setInterval(() => {
 	io.emit("onlineCount", onlineSessions.length);
@@ -170,6 +171,7 @@ const createGame = (creatorUserid: string) => {
 									activeGame.state = "FINISHED";
 									utils.emitClientSideGame(activeGame, gameNsp);
 									socket.emit("gameEnded", "Congratulations! You won!");
+									socket.emit("removeButton", gameId);
 									socket.broadcast.emit("gameEnded", `The other user won the game. You lost!`);
 									logger.info(
 										`Info: User ${socket.request.session.id}${
@@ -246,8 +248,10 @@ const endGame = (gameId: string, userAuid: string, userBuid?: string) => {
 };
 
 app.get("/", (req, res) => {
-	if (!playingUsers[req.session.id]) res.sendFile(path.join(__dirname, "..", "client", "index.html"));
-	else res.send(`<script>location.href = location.origin + '/game/${playingUsers[req.session.id]}'</script>`);
+	if (playingUsers[req.session.id])
+		res.send(`<script>location.href = location.origin + '/game/${playingUsers[req.session.id]}'</script>`);
+	else if (spectatingUsers[req.session.id]) delete spectatingUsers[req.session.id];
+	res.sendFile(path.join(__dirname, "..", "client", "index.html"));
 });
 
 app.get("/game/*", (req, res) => {
@@ -340,12 +344,15 @@ io.on("connection", (socket) => {
 		} else if (activeGames[gameId].userA.uid === socket.request.session.id) socket.emit("redirectJoin", gameId);
 		else if (playingUsers[socket.request.session.id])
 			socket.emit("redirectJoin", playingUsers[socket.request.session.id]);
+		else if (spectatingUsers[socket.request.session.id])
+			socket.emit("redirectJoin", spectatingUsers[socket.request.session.id]);
 		else {
 			activeGames[gameId].userB.uid = socket.request.session.id;
 			activeGames[gameId].state = "PICKING";
 			socket.emit("joinSuccess", gameId);
 			socket.broadcast.emit("gameClosedForJoin", gameId);
 			playingUsers[socket.request.session.id] = gameId;
+
 			utils.emitClientSideGame(activeGames[gameId], gameSockets[gameId]);
 			logger.info(
 				`Info: User ${socket.request.session.id}${
@@ -353,6 +360,22 @@ io.on("connection", (socket) => {
 						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
 						: ""
 				} successfully joined to the game #${gameId}`
+			);
+		}
+	});
+
+	socket.on("spectateGame", (gameId: string) => {
+		if (!activeGames[gameId]) {
+			socket.emit(
+				"clientError",
+				"There has been an error while trying to spectate the game. It seems like that game doesn't exist."
+			);
+			logger.info(
+				`Warning! User ${socket.request.session.id}${
+					utils.getUsername(userList, socket.request.session.id)
+						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+						: ""
+				} tried to spectate the game #${gameId} which doesn't exist.`
 			);
 		}
 	});

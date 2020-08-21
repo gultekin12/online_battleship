@@ -1,10 +1,6 @@
 import * as types from "../typings";
 
-export const setCookie = (
-	cname: string,
-	cvalue: string,
-	exdays: number = 1
-) => {
+export const setCookie = (cname: string, cvalue: string, exdays: number = 1) => {
 	var d = new Date();
 	d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
 	var expires = "expires=" + d.toUTCString();
@@ -30,7 +26,7 @@ export const getCookie = (cname: string) => {
 export const insertToArray = (arr: Array<any>, index: number, newItem: any) => [
 	...arr.slice(0, index),
 	newItem,
-	...arr.slice(index)
+	...arr.slice(index),
 ];
 
 export const error = (error: string) => {
@@ -63,10 +59,7 @@ export const error = (error: string) => {
 	document.body.appendChild(errorBox);
 };
 
-export const addJoinGameButton = (
-	gameId: string,
-	socket: SocketIOClient.Socket
-) => {
+export const addJoinGameButton = (gameId: string, socket: SocketIOClient.Socket) => {
 	const joinButton = document.createElement("button");
 	joinButton.innerText = `Join Game #${gameId}`;
 	joinButton.onclick = () => socket.emit("joinGame", gameId);
@@ -75,17 +68,22 @@ export const addJoinGameButton = (
 	document.querySelector(".activeGames").append(joinButton);
 };
 
+export const addSpectateGameButton = (gameId: string, socket: SocketIOClient.Socket) => {
+	const spectateButton = document.createElement("button");
+	spectateButton.innerText = `Spectate Game #${gameId}`;
+	spectateButton.onclick = () => socket.emit("spectateGame", gameId);
+	spectateButton.className = "spectateGame";
+	spectateButton.title = `${gameId}`;
+	document.querySelector(".activeGames").append(spectateButton);
+};
+
 export const boxIdRegex = /^[A-Z][0-9]+$/;
 
 export const setGameEnded = (optionalMessage: string = "") => {
-	const statusText = <HTMLSpanElement>(
-		document.querySelector(".topbar .status")
-	);
+	const statusText = <HTMLSpanElement>document.querySelector(".topbar .status");
 	statusText.innerText = `${optionalMessage} The game has ended. You can now leave this page.`;
 	document.body.className = "finished";
-	(<HTMLButtonElement>(
-		document.body.querySelector(".leaveGame")
-	)).onclick = () => (location.href = location.origin);
+	(<HTMLButtonElement>document.body.querySelector(".leaveGame")).onclick = () => (location.href = location.origin);
 };
 
 export const placeAlreadyPicked = (pickedShips: types.pickedButtons) => {
@@ -101,9 +99,7 @@ export const removeButtonIfExists = (buttonClass: string) => {
 };
 
 export const setOnlineCount = (onlineCount: number) => {
-	(<HTMLSpanElement>(
-		document.querySelector(".onlineCount")
-	)).innerText = `${onlineCount}`;
+	(<HTMLSpanElement>document.querySelector(".onlineCount")).innerText = `${onlineCount}`;
 };
 
 export const placeAlreadyBombed = (bombedPlaces: types.pickedButtons) => {
